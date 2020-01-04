@@ -6,6 +6,6 @@
 
 ***
 
-|Name|html link| Code
+|Name|Html| Code
 |-----------------------|-----------|----------|
-|P1 PJATK: Explanatory analysis (data: census-income)| [link](https://htmlpreview.github.io/?https://github.com/mateusz-g94/Data-Science-Projects-R/blob/master/P1-Data-Exploration/exploration.html)|[Link](https://github.com/mateusz-g94/Data-Science-Projects-R/blob/master/P1-Data-Exploration/exploration.Rmd)|
+|P1 PJATK: Explanatory analysis (data: census-income)| [Link](https://htmlpreview.github.io/?https://github.com/mateusz-g94/Data-Science-Projects-R/blob/master/P1-Data-Exploration/exploration.html)|[Link](https://github.com/mateusz-g94/Data-Science-Projects-R/blob/master/P1-Data-Exploration/exploration.Rmd)|
