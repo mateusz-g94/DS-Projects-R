@@ -1,0 +1,169 @@
+---
+title: "Project 1 - data exploration and visualization"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Source of data:** </br>
+wget http://mlr.cs.umass.edu/ml/machine-learning-databases/census-income/census-income.data
+</br></br>
+**Features:** </br>
+age: continuous</br>
+workclass: categorical</br>
+fnlwgt: continuous</br>
+education: categorical</br>
+education-num: continuous</br>
+marital-status: categorical</br>
+occupation: categorical</br>
+relationship: categorical</br>
+race: categorical</br>
+sex: binary</br>
+capital-gain: continuous</br>
+capital-loss: continuous</br>
+hours-per-week: continuous</br>
+native-country: categorical </br>
+class: binary (>50K, <=50K)</br>
+</br>
+
+### 1 Download and read data
+```{r}
+data <- read.table("./data/census-income.data", sep = ",", na.strings = "?", strip.white = TRUE)
+```
+
+```{r}
+colnames(data) <- c("age", "workclass", "fnlwgt", "education", "education-num", "marital-status", "occupation", "relationship", "race", "sex", "capital-gain", "capital-loss", "hours-per-week", "native-country", "class")
+```
+
+### 2 Handle missing data
+Level of all missing values.
+```{r}
+cat("Number of missings:",sum(is.na(data)))
+```
+Number of rows with at least one missing value.
+```{r}
+cat("Number of missing rows:",sum(apply(is.na(data), 1, max)))
+```
+Share of rows with at least one missing value.
+```{r}
+cat("Share of missing rows:", round(sum(apply(is.na(data), 1, max)) / (dim(data)[1]) * 100,2), "%")
+```
+Level of missing values by column in %. Print only these where number of missing values is greater then 0.
+```{r}
+na_col <- lapply(data, function(x) round(sum(is.na(x)) / dim(data)[1] * 100, 2))
+na_col <- na_col[na_col > 0]
+print(na_col)
+```
+In this case there is ~7% rows with at least one missing value. For now missings won't be ommited in explanatory data analysis. 
+
+```{r}
+#data.pre <- data[complete.cases(data),]
+data.pre <- data
+```
+
+### 3 Visualization 'sex'
+Load additional libraries to visualize data.
+```{r echo=T, results='hide', message=F, warning=F}
+library(lattice)
+library(ggplot2)
+library(dplyr)
+```
+Prepare data before plotting barplot. We need to compute shares of all categories.
+```{r, fig.align='center'}
+table <- as.data.frame(table(data.pre$sex))
+table.freq <- mutate(table, Freq2 = round(Freq / sum(Freq) * 100,2))
+```
+Plot data.
+```{r, fig.align='center'}
+barplot(table.freq$Freq2, names.arg = table.freq$Var1, horiz = TRUE, xlim = c(0,100), xlab = "%", )
+title("Distribution of 'sex'")
+```
+Distribution shows that majority of parctiipants are males (~67%). </br>
+
+### 3 Histogram 'age'
+Plot density.
+```{r, fig.align='center'}
+hist(data.pre$age, main = paste('Histogram of age'), freq = FALSE, ylim = c(0, 0.032), xlim = c(0,100), xlab = "age")
+```
+</br>
+Plot frequencies.
+```{r, fig.align='center'}
+hist(data.pre$age, main = paste('Histogram of age'), freq = TRUE, ylim = c(0,5000), xlim = c(0,100), xlab = "age")
+```
+Above histograms show the distribution of age in population. Minimum age is about 16. The most numerous group are people in age between 30 and 40. There are few people over 80.</br>
+
+### 4 Analysis of 'native Americans'
+For this purpose I'll create new auxiliary column (nat_ame): </br>
+0 - not native </br>
+1 - native ('native-country' = United-States or Outlying-US(Guam-USVI-etc))
+```{r}
+data.pre$nat_ame <- 0
+data.pre$nat_ame[data.pre$`native-country` == 'United-States' | data.pre$`native-country` == 'Outlying-US(Guam-USVI-etc)'] <- 1
+```
+Prepare data before plotting barplot. We need to compute shares of all categories.
+```{r}
+table <- as.data.frame(table(data.pre$nat_ame))
+table.freq <- mutate(table, Freq2 = round(Freq / sum(Freq) * 100, 2))
+```
+Plot data.
+```{r, fig.align='center'}
+barplot(table.freq$Freq2, names.arg = c("No", "Yes"), horiz = T, xlim = c(0,100), xlab = "%")
+title("Distribution of variable 'If person is native American?'")
+```
+The majority of participants are native Americans. They represent more than 90% of the whole population.</br>
+
+### 5 Analysis of 'hours-per-week'
+First look to data.
+```{r}
+table(data.pre$workclass)
+```
+The workclass categories aren't equal cardinality. The majority represents Private. Never-worked and Without-pay are the two least numerous groups. </br></br>
+Violin plot will show difrences in distributions and positional statistics like mean marked with a black dot and median marked with a red dot.
+```{r, fig.align='center'}
+ggplot(data.pre, aes(x=workclass, y=`hours-per-week`, color=workclass, fill=workclass)) + geom_violin( scale="width", trim = T) + coord_flip() + stat_summary(fun.y=median, geom="point", size=2, color="red") + stat_summary(fun.y=mean, geom="point", shape=20, size=2, color = 'black') + theme(legend.position="none") + scale_y_continuous(breaks=seq(0,100,10))
+```
+The graph shows the diffrences between distributions. We can see that self-employees work the longest. Mean for self-emp-inc is about 48 hours. This distribution has the longest right tail. Employees from government sector work on avarage 40 hours. This distribution has low standard deviation. People from Private sector work on avarage 40 hours, however there are some ouliers who work more or less than mean. Data from Never-Worked class is not reliable and should be ommited. We also don't know how to replace NA class that's why it should be ommited too.</br></br>
+Boxplot shows the same results like violin plot above but it draws attention to outliers and presents data in less overhelming way. Mean is marked by square.
+```{r, fig.align='center'}
+ggplot(data.pre, aes(x=workclass, y=`hours-per-week`)) + geom_boxplot(outlier.colour="black", outlier.shape=1, outlier.size=1, notch=F) + coord_flip() + stat_summary(fun.y=mean, geom="point", shape=5, size=2, color = 'black') + scale_y_continuous(breaks=seq(0,100,10))
+```
+  
+### 6 Analysis of working time of people under 30 by education 
+Filtr data and summarize statistics by group.
+```{r}
+tab.wyn <- filter(data.pre, workclass == 'Private', age < 30) %>% group_by(education) %>% summarise(work_h_avg = mean(`hours-per-week`), work_h_min = min(`hours-per-week`), work_h_max = max(`hours-per-week`), n = n())
+tab.wyn <- tab.wyn[order(-tab.wyn$work_h_avg),]
+```
+Show computed results.
+```{r echo=T, results='hide', message=F, warning=F}
+library(knitr)
+library(kableExtra)
+```
+Description: </br>
+work_h_avg - average working hours per week</br>
+work_h_min - minimum working hours per week</br>
+work_h_max - maximum working hours pew week</br>
+n - number of instances
+```{r}
+kable(tab.wyn, format = "html", digits=2) %>%  kable_styling("striped", full_width = F)
+```
+Table is sorted by work_h_avg. We cen see that on avarage people under 30 and with a doctorate degree work the longest. There is a connection between education and working hours. First 3 categories are people with the highest level of education and the last 3 categories are the people with the lowest degree. 
+
+### 7 Some interesting visualizations
+I'm interested in relationship between binary feature class (>50K, <=50K) and other continous variables. To visualize this relationship I will present distribution by class variable. 
+</br></br>
+Plot hours-per-week by class.
+```{r, fig.align='center'}
+ggplot(data.pre, aes(x = `hours-per-week`)) +  geom_histogram(aes(color = class, fill = class, y = ..density..),  position = "identity", bins = 30, alpha = 0.4)
+```
+
+The graph shows difrences between distributions. People with high salary work longer. This feature will be important in class prediction.
+</br></br>
+Plot education-num by class.
+```{r, fig.align='center'}
+ggplot(data.pre, aes(x = `education-num`)) +  geom_histogram(aes(color = class, fill = class, y = ..density..),  position = "identity", bins = 30, alpha = 0.4)
+```
+
+This graph presents that people with higher education earn more money. This feature will be important in class prediction. 
